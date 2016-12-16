@@ -1,0 +1,114 @@
+{$settings = $plugin->getSettings()}
+<style type="text/css">
+    #wa .CodeMirror{
+        border: 1px solid #eee;
+    }
+    .CodeMirror-scroll {
+        height: auto;
+        overflow-y: hidden;
+        overflow-x: auto;
+    }
+    .plugin-menu{
+        float: right;
+        list-style: none;
+    }
+
+    .plugin-menu li{
+        float: left;
+        margin-left: 10px;
+    }
+    .plugin-menu li a{
+        text-decoration: underline;
+    }
+    .fields{
+        position: relative;
+    }
+    .field-group.fixed{
+        width: calc(100% - 253px);
+        position: fixed;
+        background: #fff;
+        z-index: 99;
+        margin: 0;
+        bottom: 0;
+    }
+</style>
+
+<ul class="plugin-menu">
+    <li><a href="http://support.wa-plugins.ru" target="_blank"><i class="icon16 ss pt hammer"></i>Поддержка</a></li>
+</ul>
+
+<h1>{$plugin->getName()}</h1>
+<p>
+    Плагин предоставляет возможность задать ограничение на минимальную сумму заказа. Например, можно задать условие, чтобы покупатель не мог оформить заказ на сумму, меньшую 1000 руб.<br/>
+    <a href="http://www.webasyst.ru/store/plugin/shop/minsum/" target="_blank">Подробнее</a> <i class="icon10 new-window"></i>
+</p>
+
+
+<div class="fields form">
+    <form action="?module=plugins&id=minsum&action=save" method="post" id="plugins-settings-form">
+        {$wa->csrf()}
+
+        <div class="field-group">
+            <div class="field">
+                <div class="name">
+                    Статус плагина
+                </div>
+                <div class="value no-shift s-ibutton-checkbox">
+                    <input type="hidden" name="shop_minsum[status]" value="0">
+                    <input type="checkbox" id="ibutton-status" name="shop_minsum[status]" value="1"{if $settings.status|default:0} checked{/if}>
+                </div>
+            </div>
+        </div>
+        <div class="field-group"{if !$settings.status|default:0} style="display:none"{/if}>
+            <div class="field">
+                <div class="name">
+                    Выберите поселение
+                </div>
+                <div class="value">
+                    <select name="route_hash" id="route-selector">
+                        <option value="0">Общие настройки для всех поселений</option>
+                        {foreach $route_hashs as $route_url => $route_hash}
+                            <option value="{$route_hash}"{if $route_hash == $settings.route_hash|default:0} selected="selected"{/if}>{$route_url}</option>
+                        {/foreach}
+                    </select>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="field-group"{if !$settings.status|default:0} style="display:none"{/if}>
+            <div class="route-container block double-padded">
+
+            </div>
+        </div>
+
+        <div class="field-group submit fixed"{if !$settings.status|default:0} style="display:none"{/if}>
+            <div class="field">
+                <div class="value submit">
+                    <input type="submit" class="button green" value="Сохранить">
+                    <span class="hint">Ctrl+S</span>
+                    <span id="plugins-settings-form-status" style="display:none">
+                        <i style="vertical-align:middle" class="icon16 yes"></i> [`Saved`]
+                    </span>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+{$tpls = []}
+{foreach $templates as $key => $template}
+    {$mode = $template.tpl_ext}
+    {if $template.tpl_ext == 'js'}
+        {$mode = 'javascript'}
+    {/if}
+    {$tpls[] = ['id' => "sf-template-`$key`", 'mode' => $mode]}
+{/foreach}
+<script type="text/javascript" src="{$wa_app_static_url}plugins/minsum/js/settings.js?{$plugin->getVersion()}"></script>
+<script type="text/javascript">
+    $(function () {
+        $.minsum_settings.init({
+            templates: {json_encode($tpls)}
+        });
+    });
+</script>
