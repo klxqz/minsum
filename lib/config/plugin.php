@@ -9,7 +9,7 @@ return array(
     'description' => 'Установка ограничения на минимальную сумму заказа',
     'img' => 'img/minsum.png',
     'vendor' => '985310',
-    'version' => '1.0.0',
+    'version' => '1.1.0',
     'rights' => false,
     'frontend' => true,
     'shop_settings' => true,

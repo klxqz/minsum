@@ -2,6 +2,21 @@
 
 class shopMinsum {
 
+    private static $items = array();
+
+    private static function getTotal() {
+        if (self::$items) {
+            $total = 0;
+            foreach (self::$items as $item) {
+                $total += $item['price'] * $item['quantity'];
+            }
+            return $total;
+        } else {
+            $cart = new shopCart();
+            return $cart->total(true);
+        }
+    }
+
     /**
      * Проверка текущего заказ на соответсвие минимальным требованиям.
      * Возвращает result = TRUE - если условия минимального заказа выполняются, FALSE - если условия не выполняются.
@@ -9,7 +24,7 @@ class shopMinsum {
      * 
      * @return array('result' => boolean, 'message' => string)
      */
-    public static function checkOrder() {
+    public static function checkOrder($items = null) {
         $return = array(
             'result' => true,
             'message' => '',
@@ -26,11 +41,14 @@ class shopMinsum {
             return $return;
         }
 
-        $cart = new shopCart();
+        if ($items && class_exists('shopInstantorderPlugin')) {
+            self::$items = $items;
+        }
+
         $primary_currency = $route_settings['currency'];
         $frontend_currency = wa('shop')->getConfig()->getCurrency(false);
 
-        $total = $cart->total(true);
+        $total = self::getTotal();
         $total = shop_currency($total, $frontend_currency, $primary_currency, false);
         $min_order_sum = $route_settings['min_order_sum'];
         $min_order_sum_format = shop_currency($min_order_sum, $primary_currency, $frontend_currency);
