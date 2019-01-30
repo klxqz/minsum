@@ -4,7 +4,8 @@
  * @author wa-plugins.ru <support@wa-plugins.ru>
  * @link http://wa-plugins.ru/
  */
-class shopMinsumPlugin extends shopPlugin {
+class shopMinsumPlugin extends shopPlugin
+{
 
     public static $templates = array(
         'minsum_js' => array(
@@ -16,7 +17,8 @@ class shopMinsumPlugin extends shopPlugin {
         ),
     );
 
-    public function saveSettings($settings = array()) {
+    public function saveSettings($settings = array())
+    {
         $route_hash = waRequest::post('route_hash');
         $route_settings = waRequest::post('route_settings');
 
@@ -59,7 +61,8 @@ class shopMinsumPlugin extends shopPlugin {
         }
     }
 
-    public function frontendCheckout($param) {
+    public function frontendCheckout($param)
+    {
         $plugin = wa()->getPlugin('minsum');
         if (!$plugin->getSettings('status')) {
             return false;
@@ -83,7 +86,8 @@ class shopMinsumPlugin extends shopPlugin {
         }
     }
 
-    public function frontendCart() {
+    public function frontendCart()
+    {
         if (!$this->getSettings('status')) {
             return false;
         }
@@ -101,18 +105,28 @@ class shopMinsumPlugin extends shopPlugin {
         $minsum_js_url = shopMinsumRouteHelper::getRouteTemplateUrl('minsum_js', $route_hash);
         $version = $this->getVersion();
 
-        $cart_total_selector = isset($route_settings['cart_total_selector']) ? $route_settings['cart_total_selector'] : '';
-        $checkout_selector = isset($route_settings['checkout_selector']) ? $route_settings['checkout_selector'] : '';
-        $url = wa()->getRouteUrl('shop/frontend/cart', array('plugin' => 'minsum'));
+        $init_data = array(
+            'url' => wa()->getRouteUrl('shop/frontend/cart', array('plugin' => 'minsum')),
+            'checkout_selector' => isset($route_settings['checkout_selector']) ? $route_settings['checkout_selector'] : '',
+            'cart_actions' => array('save/', 'add/', 'delete/')
+
+        );
+
+        $ss_version = explode('.', wa('shop')->getVersion());
+        if ($ss_version[0] >= 8) {
+            $init_data['order_calculate_url'] = wa()->getRouteUrl('shop/frontendOrder', array('action' => 'calculate'));
+        }
+
+        if (class_exists('shopOnestepPlugin')) {
+            $init_data['onestep_url'] = wa()->getRouteUrl('shop/frontend/onestep');
+        }
+
+        $json = json_encode($init_data);
         return <<<HTML
 <script type="text/javascript" src="{$minsum_js_url}?v{$version}"></script> 
 <script type="text/javascript">
     $(function () {
-        $.minsum.init({
-            url: '{$url}',
-            checkout_selector: '{$checkout_selector}',
-            cart_total_selector: '{$cart_total_selector}'
-        });
+        $.minsum.init({$json});
     });
 </script>
 HTML;

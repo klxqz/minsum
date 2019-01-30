@@ -1,11 +1,95 @@
 (function ($) {
     $.minsum = {
-        options: {},
+        options: {
+            cart_actions: [],
+            checkout_selector: '',
+            is_cart: false,
+            is_onestep: false,
+            is_ss8order: false,
+            onestep_url: '',
+            order_calculate_url: '',
+            url: '',
+            minsum_selector: '#minsum-cart'
+        },
         init: function (options) {
-            this.options = options;
+            $.extend(this.options, options);
+
             if (!this.checkSettings()) {
                 return false;
             }
+            console.log('minsum init:');
+            console.log(this.options);
+
+            if (this.options.is_ss8order) {
+                this.orderCalculate();
+            } else if (this.options.is_cart) {
+                this.cartActions();
+            } else if (this.options.is_onestep) {
+                this.onestepComplete();
+            }
+            this.checkCart();
+        },
+        checkSettings: function () {
+            /*Проверка наличия плагина заказ на одной странице*/
+            if ($('.onestep-cart').length) {
+                this.options.is_onestep = true;
+            } else if ($('#wa-order-form-wrapper').length) {
+                /*Проверка одностраничного оформления заказа в Shop-Script 8*/
+                this.options.is_ss8order = true;
+                this.options.checkout_selector = '.wa-actions-section .js-submit-order-button';
+            } else {
+                this.options.is_cart = true;
+                if (!$(this.options.checkout_selector).length) {
+                    console.log('Указанный селектор не удалось найти "' + this.options.checkout_selector + '"');
+                    console.log('Выполняется автоматический поиск.');
+                    if ($('[name=checkout]').length) {
+                        console.log('Найден [name=checkout]');
+                        this.options.checkout_selector = '[name=checkout]';
+                    } else {
+                        console.log('Селектор checkout_selector не найден');
+                        return false;
+                    }
+                }
+            }
+            return true;
+        },
+        orderCalculate: function () {
+            var minsum = this;
+            console.log('minsum init orderCalculate');
+            $(document).ajaxComplete(function (event, xhr, settings) {
+                console.log('minsum orderCalculate:');
+                console.log(settings);
+                console.log(settings.url === minsum.options.order_calculate_url);
+                if (settings.url === minsum.options.order_calculate_url) {
+                    minsum.checkCart();
+                }
+            });
+        },
+        onestepComplete: function () {
+            var minsum = this;
+            console.log('minsum init onestepComplete');
+            $(document).ajaxComplete(function (event, xhr, settings) {
+                console.log('minsum onestepComplete:');
+                console.log(settings);
+                console.log(settings.url.indexOf(minsum.options.onestep_url));
+                if (settings.url.indexOf(minsum.options.onestep_url) != -1) {
+                    minsum.checkCart();
+                }
+            });
+        },
+        cartActions: function () {
+            var minsum = this;
+            console.log('minsum init cartActions');
+            $(document).ajaxComplete(function (event, xhr, settings) {
+                console.log('minsum cartActions:');
+                console.log(settings);
+                console.log($.inArray(settings.url, minsum.options.cart_actions));
+                if ($.inArray(settings.url, minsum.options.cart_actions) != -1) {
+                    minsum.checkCart();
+                }
+            });
+        },
+        disableCheckout: function (loading, message) {
             if (!$('#minsum-cart').length) {
                 if (this.options.is_onestep) {
                     $('.onestep-cart .onestep-cart-form').after('<div id="minsum-cart" class="hidden" style="display:none;"></div>');
@@ -13,41 +97,7 @@
                     $(this.options.checkout_selector).after('<div id="minsum-cart" class="hidden" style="display:none;"></div>');
                 }
             }
-            this.options.minsum_selector = '#minsum-cart';
-            this.initUpdateCart();
-            this.initCartTotalChange();
 
-        },
-        checkSettings: function () {
-            /*Проверка наличия плагина заказ на одной странице*/
-            if ($('.onestep-cart').length) {
-                this.options.is_onestep = true;
-                this.options.cart_total_selector = '.onestep-cart .cart-total';
-
-            } else {
-                this.options.is_onestep = false;
-                if (!$(this.options.cart_total_selector).length) {
-                    console.log('Указан неверный селектор "' + this.options.cart_total_selector + '"');
-                    return false;
-                }
-                if (!$(this.options.checkout_selector).length) {
-                    console.log('Указан неверный селектор "' + this.options.checkout_selector + '"');
-                    return false;
-                }
-            }
-            return true;
-        },
-        initCartTotalChange: function () {
-            var $cart_total = $(this.options.cart_total_selector);
-            var total = '';
-            setInterval(function () {
-                if (total != $cart_total.html()) {
-                    total = $cart_total.html();
-                    $(document).trigger('updateCart');
-                }
-            }, 500);
-        },
-        disableCheckout: function (loading, message) {
             if ($('#minsum-cart-loading').length) {
                 $('#minsum-cart-loading').remove();
             }
@@ -110,12 +160,6 @@
                 error: function (jqXHR, errorText) {
                     minsum.enableCheckout();
                 }
-            });
-        },
-        initUpdateCart: function () {
-            var minsum = this;
-            $(document).on('updateCart', function () {
-                minsum.checkCart();
             });
         }
     };
